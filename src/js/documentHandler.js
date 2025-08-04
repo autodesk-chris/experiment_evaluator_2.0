@@ -131,38 +131,69 @@ class DocumentHandler {
             whatNext: ''
         };
 
-        // Split content into sections based on headers
+        // Section header mappings with variations
+        const sectionMappings = {
+            outcome: ['outcome'],
+            trunkProblem: ['trunk problem'],
+            branchProblem: ['branch problem'],
+            rootCause: ['root cause statement', 'root cause', 'root cause problem statement'],
+            supportingData: ['supporting data', 'why'],
+            hypothesis: ['hypothesis statement', 'hypothesis'],
+            prediction: ['prediction'],
+            testTitle: ['test title'],
+            shortDescription: ['short description'],
+            learningObjective: ['test learning objective', 'learning objective'],
+            testType: ['test type'],
+            testVariant: ['test variant description'],
+            controlVariant: ['control variant description'],
+            audience: ['audience'],
+            duration: ['duration'],
+            successCriteria: ['success criteria'],
+            dataRequirements: ['data requirements'],
+            considerations: ['consideration or investigative requirements', 'considerations and investigation requirements', 'considerations'],
+            whatNext: ['what next']
+        };
+
+        // Split content into lines
         const lines = content.split('\n');
         let currentSection = null;
+        let debugLog = [];
 
-        for (const line of lines) {
-            const trimmedLine = line.trim().toLowerCase();
-            
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            // Remove bullet points, normalize whitespace, and convert to lowercase
+            const normalizedLine = line.replace(/^[•\-\*]\s*/, '')
+                                     .replace(/[:\.]\s*$/, '')
+                                     .trim()
+                                     .toLowerCase();
+
+            // Skip empty lines
+            if (!normalizedLine) continue;
+
             // Check for section headers
-            if (trimmedLine === 'outcome') currentSection = 'outcome';
-            else if (trimmedLine === 'trunk problem') currentSection = 'trunkProblem';
-            else if (trimmedLine === 'branch problem') currentSection = 'branchProblem';
-            else if (trimmedLine === 'root cause statement') currentSection = 'rootCause';
-            else if (trimmedLine === 'supporting data') currentSection = 'supportingData';
-            else if (trimmedLine === 'hypothesis statement') currentSection = 'hypothesis';
-            else if (trimmedLine === 'prediction') currentSection = 'prediction';
-            else if (trimmedLine === 'test title') currentSection = 'testTitle';
-            else if (trimmedLine === 'short description') currentSection = 'shortDescription';
-            else if (trimmedLine === 'test learning objective') currentSection = 'learningObjective';
-            else if (trimmedLine === 'test type') currentSection = 'testType';
-            else if (trimmedLine === 'test variant description') currentSection = 'testVariant';
-            else if (trimmedLine === 'control variant description') currentSection = 'controlVariant';
-            else if (trimmedLine === 'audience') currentSection = 'audience';
-            else if (trimmedLine === 'duration') currentSection = 'duration';
-            else if (trimmedLine === 'success criteria') currentSection = 'successCriteria';
-            else if (trimmedLine === 'data requirements') currentSection = 'dataRequirements';
-            else if (trimmedLine === 'considerations and investigation requirements') currentSection = 'considerations';
-            else if (trimmedLine === 'what next') currentSection = 'whatNext';
-            else if (currentSection && line.trim()) {
-                // Append content to current section
+            let foundSection = false;
+            for (const [sectionKey, headerVariations] of Object.entries(sectionMappings)) {
+                if (headerVariations.some(header => normalizedLine === header)) {
+                    currentSection = sectionKey;
+                    foundSection = true;
+                    debugLog.push(`Found section: ${sectionKey} at line ${i + 1}`);
+                    break;
+                }
+            }
+
+            // If this line wasn't a section header and we have a current section, append content
+            if (!foundSection && currentSection && normalizedLine) {
                 sections[currentSection] += (sections[currentSection] ? '\n' : '') + line.trim();
             }
         }
+
+        // Log debug information
+        console.log('Section Detection Results:', debugLog);
+        console.log('Parsed Sections:', Object.entries(sections).map(([key, value]) => ({
+            section: key,
+            hasContent: Boolean(value),
+            contentPreview: value ? value.substring(0, 50) + '...' : 'empty'
+        })));
 
         return sections;
     }
