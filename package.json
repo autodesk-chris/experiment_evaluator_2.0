@@ -1,0 +1,27 @@
+{
+  "name": "experiment-evaluator",
+  "version": "1.0.0",
+  "description": "A tool to evaluate experiment documentation against best practices",
+  "main": "src/js/index.js",
+  "scripts": {
+    "start": "netlify dev",
+    "test": "jest",
+    "build": "webpack --mode production"
+  },
+  "dependencies": {
+    "mammoth": "^1.6.0",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^5.0.0",
+    "netlify-cli": "^12.0.0",
+    "@babel/core": "^7.0.0",
+    "@babel/preset-env": "^7.0.0",
+    "babel-loader": "^9.0.0",
+    "css-loader": "^6.0.0",
+    "style-loader": "^3.0.0",
+    "html-webpack-plugin": "^5.0.0"
+  }
+} 
