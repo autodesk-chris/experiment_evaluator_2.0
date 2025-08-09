@@ -444,7 +444,7 @@ class Evaluator {
 
     async evaluateWithAI(section, content) {
         try {
-            const response = await fetch('/.netlify/functions/evaluateSection', {
+            const response = await fetch('/api/evaluate-section', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
