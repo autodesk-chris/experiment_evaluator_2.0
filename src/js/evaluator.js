@@ -201,30 +201,38 @@ class Evaluator {
         };
     }
 
-    evaluateLearningObjective() {
+    async evaluateLearningObjective() {
         const content = this.sections.learningObjective;
         if (!content) {
             this.scores.learningObjective = 0;
             this.feedback.learningObjective = {
                 score: 0,
-                message: 'Missing learning objective'
+                message: 'Missing learning objective',
+                details: {}
             };
             return;
         }
 
-        // Basic scoring based on presence of key elements
-        const hasAction = /what|how|why|when|where|which/i.test(content);
-        const hasBehavior = /user|customer|client|behavior|usage|interaction/i.test(content);
-        
-        let score = 0;
-        if (hasAction && hasBehavior) score = 2;
-        else if (hasAction || hasBehavior) score = 1;
-
-        this.scores.learningObjective = score;
-        this.feedback.learningObjective = {
-            score,
-            message: this.getLearningObjectiveFeedback(score)
-        };
+        try {
+            const evaluation = await this.evaluateWithAI('learningObjective', content);
+            // Since the AI returns an array of evaluations, we'll take the highest score
+            // if there are multiple objectives
+            const highestEval = evaluation.reduce((prev, curr) => 
+                prev.score > curr.score ? prev : curr
+            );
+            
+            this.scores.learningObjective = highestEval.score;
+            this.feedback.learningObjective = {
+                score: highestEval.score,
+                message: highestEval.reason,
+                details: {
+                    evidence: highestEval.evidence,
+                    recommendation: highestEval.recommendation
+                }
+            };
+        } catch (error) {
+            this.handleAIError('learningObjective');
+        }
     }
 
     evaluateTestType() {
@@ -478,20 +486,10 @@ class Evaluator {
 
     calculateTotalScore() {
         const totalPoints = Object.values(this.scores).reduce((sum, score) => sum + score, 0);
-        const maxPoints = 100; // Total possible points
+        const maxPoints = 88; // Total possible points (3×10 + 4×10 + 9×2)
         return Math.round((totalPoints / maxPoints) * 100);
     }
 
-    getLearningObjectiveFeedback(score) {
-        switch (score) {
-            case 2:
-                return 'Clear learning objective with specific action and behavior';
-            case 1:
-                return 'Learning objective needs more specificity';
-            default:
-                return 'Learning objective is unclear or missing key elements';
-        }
-    }
 
     getVariantFeedback(score) {
         switch (score) {

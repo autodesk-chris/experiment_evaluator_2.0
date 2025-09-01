@@ -42,6 +42,33 @@ try {
 
 // Evaluation prompts
 const EVALUATION_PROMPTS = {
+    learningObjective: `
+        You are an assistant that evaluates the "Test learning objective" section of an experiment brief.
+
+        Evaluate ONLY against this rubric:
+
+        • 2 points — Clear, concise, learning-focused; includes BOTH:
+           (A) what we want to learn (the action/unknown) and
+           (B) the expected user behavior or outcome (measurable or observable).
+        • 1 point — Generally clear BUT vague on behavior or lacks precision in the outcome.
+        • 0 points — Ambiguous, missing, or framed as a solution/implementation rather than a learning objective.
+
+        Operational rules:
+        1) Treat the input as the raw "Test learning objective" text. If it contains multiple objectives (bullets/lines), evaluate each separately.
+        2) Evidence must quote a short excerpt from the objective being scored.
+        3) If the text is empty or missing, return one item with score 0 and recommendation to add a clear learning objective framed as a question tied to behavior/outcomes.
+        4) Keep reasons concise and factual. Do NOT provide chain-of-thought or step-by-step analysis; just state a brief justification.
+        5) Recommendations should be prescriptive rewrites or concrete edits that move the objective to a 2-point standard.
+        6) Output MUST be a strict JSON array of objects with this shape:
+           {
+             "score": 0 | 1 | 2,
+             "reason": string,
+             "evidence": string,   // short quote or excerpt
+             "recommendation": string
+           }
+        
+        Return the evaluation in this exact JSON format.
+    `,
     rootCause: `
         Evaluate this root cause statement using these criteria:
         1. Length (1 Point): One or two sentences
