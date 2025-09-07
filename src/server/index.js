@@ -17,7 +17,7 @@ process.on('unhandledRejection', (error) => {
 console.log('Starting server initialization...');
 
 const app = express();
-const port = 3003;
+const port = 3001;
 
 // Middleware
 app.use(cors());
@@ -191,9 +191,15 @@ app.post('/api/evaluate-section', async (req, res) => {
     }
 
     try {
+        console.log('Received evaluation request:', {
+            section: req.body.section,
+            content: req.body.content
+        });
+        
         const { section, content } = req.body;
         
         if (!section || !content) {
+            console.error('Missing required fields:', { section, content });
             return res.status(400).json({
                 error: 'Missing section or content'
             });
@@ -201,10 +207,13 @@ app.post('/api/evaluate-section', async (req, res) => {
 
         const prompt = EVALUATION_PROMPTS[section];
         if (!prompt) {
+            console.error('Invalid section type:', section);
             return res.status(400).json({
                 error: 'Invalid section type'
             });
         }
+        
+        console.log('Using prompt for section:', section);
 
         // Function definition for OpenAI
         const functions = [

@@ -1,5 +1,6 @@
 const { OpenAI } = require('openai');
 require('dotenv').config();
+const fetch = require('node-fetch');
 
 // Test cases
 const TEST_CASES = {

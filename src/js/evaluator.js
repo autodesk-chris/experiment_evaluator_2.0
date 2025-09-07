@@ -208,30 +208,65 @@ class Evaluator {
             this.feedback.learningObjective = {
                 score: 0,
                 message: 'Missing learning objective',
-                details: {}
+                details: {
+                    error: 'No learning objective provided. Please add a clear, single learning objective that states what you want to learn and the expected user behavior.',
+                    status: 'MISSING_CONTENT'
+                }
             };
             return;
         }
 
         try {
             const evaluation = await this.evaluateWithAI('learningObjective', content);
-            // Since the AI returns an array of evaluations, we'll take the highest score
-            // if there are multiple objectives
-            const highestEval = evaluation.reduce((prev, curr) => 
-                prev.score > curr.score ? prev : curr
-            );
             
-            this.scores.learningObjective = highestEval.score;
+            // Validate the AI response structure
+            if (!evaluation || typeof evaluation !== 'object') {
+                throw new Error('Invalid AI response format: Response is empty or not an object');
+            }
+            
+            if (typeof evaluation.score !== 'number' || 
+                !evaluation.reason || 
+                !evaluation.evidence || 
+                !evaluation.recommendation) {
+                throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
+            }
+
+            // Update scores and feedback
+            this.scores.learningObjective = evaluation.score;
             this.feedback.learningObjective = {
-                score: highestEval.score,
-                message: highestEval.reason,
+                score: evaluation.score,
+                message: evaluation.reason,
                 details: {
-                    evidence: highestEval.evidence,
-                    recommendation: highestEval.recommendation
+                    evidence: evaluation.evidence,
+                    recommendation: evaluation.recommendation,
+                    status: 'SUCCESS'
                 }
             };
+
+            // Log successful evaluation for debugging
+            console.log('Learning Objective Evaluation:', {
+                content,
+                score: evaluation.score,
+                reason: evaluation.reason
+            });
+
         } catch (error) {
-            this.handleAIError('learningObjective');
+            console.error('Learning Objective Evaluation Error:', {
+                content,
+                error: error.message,
+                stack: error.stack
+            });
+
+            this.scores.learningObjective = 0;
+            this.feedback.learningObjective = {
+                score: 0,
+                message: 'Error evaluating learning objective',
+                details: {
+                    error: `Evaluation failed: ${error.message}. Please try again or contact support if the issue persists.`,
+                    status: 'ERROR',
+                    technicalDetails: error.stack
+                }
+            };
         }
     }
 
@@ -242,82 +277,211 @@ class Evaluator {
         };
     }
 
-    evaluateTestVariant() {
+    async evaluateTestVariant() {
         const content = this.sections.testVariant;
         if (!content) {
             this.scores.testVariant = 0;
             this.feedback.testVariant = {
                 score: 0,
-                message: 'Missing test variant description'
+                message: 'Missing test variant description',
+                details: {
+                    error: 'No test variant description provided. Please add a clear description of the variant experience and how it differs from the control.',
+                    status: 'MISSING_CONTENT'
+                }
             };
             return;
         }
 
-        // Basic scoring based on clarity and completeness
-        const hasImplementation = /how|implement|change|modify|add|remove/i.test(content);
-        const hasUserImpact = /user|see|experience|interact|receive/i.test(content);
-        
-        let score = 0;
-        if (hasImplementation && hasUserImpact) score = 2;
-        else if (hasImplementation || hasUserImpact) score = 1;
+        try {
+            const evaluation = await this.evaluateWithAI('testVariant', content);
+            
+            // Validate the AI response structure
+            if (!evaluation || typeof evaluation !== 'object') {
+                throw new Error('Invalid AI response format: Response is empty or not an object');
+            }
+            
+            if (typeof evaluation.score !== 'number' || 
+                !evaluation.reason || 
+                !evaluation.evidence || 
+                !evaluation.recommendation) {
+                throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
+            }
 
-        this.scores.testVariant = score;
-        this.feedback.testVariant = {
-            score,
-            message: this.getVariantFeedback(score)
-        };
+            // Update scores and feedback
+            this.scores.testVariant = evaluation.score;
+            this.feedback.testVariant = {
+                score: evaluation.score,
+                message: evaluation.reason,
+                details: {
+                    evidence: evaluation.evidence,
+                    recommendation: evaluation.recommendation,
+                    status: 'SUCCESS'
+                }
+            };
+
+            // Log successful evaluation for debugging
+            console.log('Test Variant Evaluation:', {
+                content,
+                score: evaluation.score,
+                reason: evaluation.reason
+            });
+
+        } catch (error) {
+            console.error('Test Variant Evaluation Error:', {
+                content,
+                error: error.message,
+                stack: error.stack
+            });
+
+            this.scores.testVariant = 0;
+            this.feedback.testVariant = {
+                score: 0,
+                message: 'Error evaluating test variant',
+                details: {
+                    error: `Evaluation failed: ${error.message}. Please try again or contact support if the issue persists.`,
+                    status: 'ERROR',
+                    technicalDetails: error.stack
+                }
+            };
+        }
     }
 
-    evaluateControlVariant() {
+    async evaluateControlVariant() {
         const content = this.sections.controlVariant;
         if (!content) {
             this.scores.controlVariant = 0;
             this.feedback.controlVariant = {
                 score: 0,
-                message: 'Missing control variant description'
+                message: 'Missing control variant description',
+                details: {
+                    error: 'No control variant description provided. Please add a clear description of the existing baseline experience.',
+                    status: 'MISSING_CONTENT'
+                }
             };
             return;
         }
 
-        // Basic scoring based on clarity
-        const hasCurrentState = /current|existing|baseline|standard/i.test(content);
-        const hasDetail = content.split(' ').length >= 10;
-        
-        let score = 0;
-        if (hasCurrentState && hasDetail) score = 2;
-        else if (hasCurrentState || hasDetail) score = 1;
+        try {
+            const evaluation = await this.evaluateWithAI('controlVariant', content);
+            
+            // Validate the AI response structure
+            if (!evaluation || typeof evaluation !== 'object') {
+                throw new Error('Invalid AI response format: Response is empty or not an object');
+            }
+            
+            if (typeof evaluation.score !== 'number' || 
+                !evaluation.reason || 
+                !evaluation.evidence || 
+                !evaluation.recommendation) {
+                throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
+            }
 
-        this.scores.controlVariant = score;
-        this.feedback.controlVariant = {
-            score,
-            message: this.getControlVariantFeedback(score)
-        };
+            // Update scores and feedback
+            this.scores.controlVariant = evaluation.score;
+            this.feedback.controlVariant = {
+                score: evaluation.score,
+                message: evaluation.reason,
+                details: {
+                    evidence: evaluation.evidence,
+                    recommendation: evaluation.recommendation,
+                    status: 'SUCCESS'
+                }
+            };
+
+            // Log successful evaluation for debugging
+            console.log('Control Variant Evaluation:', {
+                content,
+                score: evaluation.score,
+                reason: evaluation.reason
+            });
+
+        } catch (error) {
+            console.error('Control Variant Evaluation Error:', {
+                content,
+                error: error.message,
+                stack: error.stack
+            });
+
+            this.scores.controlVariant = 0;
+            this.feedback.controlVariant = {
+                score: 0,
+                message: 'Error evaluating control variant',
+                details: {
+                    error: `Evaluation failed: ${error.message}. Please try again or contact support if the issue persists.`,
+                    status: 'ERROR',
+                    technicalDetails: error.stack
+                }
+            };
+        }
     }
 
-    evaluateAudience() {
+    async evaluateAudience() {
         const content = this.sections.audience;
         if (!content) {
             this.scores.audience = 0;
             this.feedback.audience = {
                 score: 0,
-                message: 'Missing audience definition'
+                message: 'Missing audience definition',
+                details: {
+                    error: 'No audience definition provided. Please add a clear description of the target audience with specific criteria and randomization method.',
+                    status: 'MISSING_CONTENT'
+                }
             };
             return;
         }
 
-        // Basic scoring based on specificity
-        const hasTargeting = /segment|cohort|group|users|customers/i.test(content);
-        const hasCriteria = /new|existing|active|inactive|registered|profile|behavior/i.test(content);
-        
-        let score = 0;
-        if (hasTargeting && hasCriteria) score = 2;
-        else if (hasTargeting || hasCriteria) score = 1;
+        try {
+            const evaluation = await this.evaluateWithAI('audience', content);
+            
+            // Validate the AI response structure
+            if (!evaluation || typeof evaluation !== 'object') {
+                throw new Error('Invalid AI response format: Response is empty or not an object');
+            }
+            
+            if (typeof evaluation.score !== 'number' || 
+                !evaluation.reason || 
+                !evaluation.evidence || 
+                !evaluation.recommendation) {
+                throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
+            }
 
-        this.scores.audience = score;
-        this.feedback.audience = {
-            score,
-            message: this.getAudienceFeedback(score)
-        };
+            // Update scores and feedback
+            this.scores.audience = evaluation.score;
+            this.feedback.audience = {
+                score: evaluation.score,
+                message: evaluation.reason,
+                details: {
+                    evidence: evaluation.evidence,
+                    recommendation: evaluation.recommendation,
+                    status: 'SUCCESS'
+                }
+            };
+
+            // Log successful evaluation for debugging
+            console.log('Audience Evaluation:', {
+                content,
+                score: evaluation.score,
+                reason: evaluation.reason
+            });
+
+        } catch (error) {
+            console.error('Audience Evaluation Error:', {
+                content,
+                error: error.message,
+                stack: error.stack
+            });
+
+            this.scores.audience = 0;
+            this.feedback.audience = {
+                score: 0,
+                message: 'Error evaluating audience',
+                details: {
+                    error: `Evaluation failed: ${error.message}. Please try again or contact support if the issue persists.`,
+                    status: 'ERROR',
+                    technicalDetails: error.stack
+                }
+            };
+        }
     }
 
     evaluateDuration() {
@@ -452,6 +616,12 @@ class Evaluator {
 
     async evaluateWithAI(section, content) {
         try {
+            console.log('Making API request:', {
+                section,
+                content,
+                url: '/api/evaluate-section'
+            });
+
             const response = await fetch('/api/evaluate-section', {
                 method: 'POST',
                 headers: {
@@ -463,13 +633,24 @@ class Evaluator {
                 })
             });
 
+            console.log('API Response status:', response.status);
+            
             if (!response.ok) {
-                throw new Error('AI evaluation failed');
+                const errorText = await response.text();
+                console.error('API Error Response:', errorText);
+                throw new Error(`AI evaluation failed: ${response.status} ${errorText}`);
             }
 
-            return await response.json();
+            const jsonResponse = await response.json();
+            console.log('API Success Response:', jsonResponse);
+            return jsonResponse;
         } catch (error) {
-            throw new Error('Failed to evaluate with AI');
+            console.error('API Call Error:', {
+                error: error.message,
+                stack: error.stack,
+                type: error.constructor.name
+            });
+            throw new Error(`Failed to evaluate with AI: ${error.message}`);
         }
     }
 
@@ -491,38 +672,8 @@ class Evaluator {
     }
 
 
-    getVariantFeedback(score) {
-        switch (score) {
-            case 2:
-                return 'Clear implementation and user impact description';
-            case 1:
-                return 'Test variant needs more detail';
-            default:
-                return 'Test variant description is unclear or incomplete';
-        }
-    }
 
-    getControlVariantFeedback(score) {
-        switch (score) {
-            case 2:
-                return 'Clear baseline experience description';
-            case 1:
-                return 'Control variant needs more detail';
-            default:
-                return 'Control variant description is unclear or incomplete';
-        }
-    }
 
-    getAudienceFeedback(score) {
-        switch (score) {
-            case 2:
-                return 'Well-defined audience with clear targeting criteria';
-            case 1:
-                return 'Audience definition needs more specificity';
-            default:
-                return 'Audience is poorly defined or missing criteria';
-        }
-    }
 
     getDurationFeedback(score) {
         switch (score) {

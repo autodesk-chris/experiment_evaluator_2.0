@@ -31,6 +31,21 @@ class DisplayManager {
         this.totalScoreElement.className = this.getScoreClass(score);
     }
 
+    getMaxScore(section) {
+        // Binary sections (10 points)
+        const binarySections = ['outcome', 'trunkProblem', 'branchProblem'];
+        // AI-evaluated sections (10 points)
+        const aiSections = ['rootCause', 'supportingData', 'hypothesis', 'prediction'];
+        // AI-evaluated sections with 2-point scoring
+        const aiTwoPointSections = ['learningObjective', 'testVariant'];
+        
+        if (binarySections.includes(section) || aiSections.includes(section)) {
+            return 10;
+        }
+        // 2-point sections (AI or pattern-matching)
+        return 2;
+    }
+
     updateSectionScores(scores, feedback) {
         this.sectionListElement.innerHTML = '';
         
@@ -42,9 +57,10 @@ class DisplayManager {
             label.className = 'score-label';
             label.textContent = this.formatSectionName(section);
             
+            const maxScore = this.getMaxScore(section);
             const value = document.createElement('div');
-            value.className = `score-value ${this.getScoreClass(score)}`;
-            value.textContent = `${score}/10`;
+            value.className = `score-value ${this.getScoreClass((score / maxScore) * 10)}`; // Normalize to /10 for color coding
+            value.textContent = `${score}/${maxScore}`;
             
             scoreItem.appendChild(label);
             scoreItem.appendChild(value);
@@ -67,9 +83,10 @@ class DisplayManager {
             title.textContent = this.formatSectionName(section);
             
             const score = document.createElement('div');
-            score.className = `score-value ${this.getScoreClass(data.score)}`;
+            const maxScore = this.getMaxScore(section);
+            score.className = `score-value ${this.getScoreClass(data.score !== undefined ? (data.score / maxScore) * 10 : 0)}`;
             if (data.score !== undefined) {
-                score.textContent = `${data.score}/10`;
+                score.textContent = `${data.score}/${maxScore}`;
             }
             
             header.appendChild(title);

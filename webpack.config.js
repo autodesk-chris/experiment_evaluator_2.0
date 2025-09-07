@@ -1,5 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
+require('dotenv').config();
 
 module.exports = {
     entry: {
@@ -37,6 +39,9 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './public/index.html',
             filename: 'index.html'
+        }),
+        new webpack.DefinePlugin({
+            'process.env': JSON.stringify(process.env)
         })
     ],
     devServer: {
@@ -45,11 +50,10 @@ module.exports = {
         },
         compress: true,
         port: 3000,
-        proxy: {
-            '/.netlify/functions': {
-                target: 'http://localhost:9000',
-                pathRewrite: { '^/.netlify/functions': '' }
-            }
-        }
+        proxy: [{
+            context: ['/api'],
+            target: 'http://localhost:3001',
+            pathRewrite: { '^/api': '' }
+        }]
     }
 }; 
