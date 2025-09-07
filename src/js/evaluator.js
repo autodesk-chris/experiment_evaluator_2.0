@@ -484,134 +484,350 @@ class Evaluator {
         }
     }
 
-    evaluateDuration() {
+    async evaluateDuration() {
         const content = this.sections.duration;
         if (!content) {
             this.scores.duration = 0;
             this.feedback.duration = {
                 score: 0,
-                message: 'Missing duration'
+                message: 'Missing duration definition',
+                details: {
+                    error: 'No duration provided. Please add a clear, specific duration with rationale (e.g., expected user volume, statistical power, or alignment with product usage patterns).',
+                    status: 'MISSING_CONTENT'
+                }
             };
             return;
         }
 
-        // Basic scoring based on specificity and rationale
-        const hasTimeframe = /days|weeks|months|until/i.test(content);
-        const hasRationale = /because|due to|based on|expect|need|require/i.test(content);
-        
-        let score = 0;
-        if (hasTimeframe && hasRationale) score = 2;
-        else if (hasTimeframe || hasRationale) score = 1;
+        try {
+            const evaluation = await this.evaluateWithAI('duration', content);
+            
+            // Validate the AI response structure
+            if (!evaluation || typeof evaluation !== 'object') {
+                throw new Error('Invalid AI response format: Response is empty or not an object');
+            }
+            
+            if (typeof evaluation.score !== 'number' || 
+                !evaluation.reason || 
+                !evaluation.evidence || 
+                evaluation.recommendation === undefined) {
+                throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
+            }
 
-        this.scores.duration = score;
-        this.feedback.duration = {
-            score,
-            message: this.getDurationFeedback(score)
-        };
+            // Update scores and feedback
+            this.scores.duration = evaluation.score;
+            this.feedback.duration = {
+                score: evaluation.score,
+                message: evaluation.reason,
+                details: {
+                    evidence: evaluation.evidence,
+                    recommendation: evaluation.recommendation,
+                    status: 'SUCCESS'
+                }
+            };
+
+            // Log successful evaluation for debugging
+            console.log('Duration Evaluation:', {
+                content,
+                score: evaluation.score,
+                reason: evaluation.reason
+            });
+
+        } catch (error) {
+            console.error('Duration Evaluation Error:', {
+                content,
+                error: error.message,
+                stack: error.stack
+            });
+
+            this.scores.duration = 0;
+            this.feedback.duration = {
+                score: 0,
+                message: 'Error evaluating duration',
+                details: {
+                    error: `Evaluation failed: ${error.message}. Please try again or contact support if the issue persists.`,
+                    status: 'ERROR',
+                    technicalDetails: error.stack
+                }
+            };
+        }
     }
 
-    evaluateSuccessCriteria() {
+
+    async evaluateSuccessCriteria() {
         const content = this.sections.successCriteria;
         if (!content) {
             this.scores.successCriteria = 0;
             this.feedback.successCriteria = {
                 score: 0,
-                message: 'Missing success criteria'
+                message: 'Missing success criteria definition',
+                details: {
+                    error: 'No success criteria provided. Please add clear, quantitative success thresholds with statistical significance criteria or logical benchmarks.',
+                    status: 'MISSING_CONTENT'
+                }
             };
             return;
         }
 
-        // Basic scoring based on measurability
-        const hasMetric = /increase|decrease|improve|reduce|[0-9]+%|ratio|rate/i.test(content);
-        const hasThreshold = /significant|p-value|confidence|statistical|threshold/i.test(content);
-        
-        let score = 0;
-        if (hasMetric && hasThreshold) score = 2;
-        else if (hasMetric || hasThreshold) score = 1;
+        try {
+            const evaluation = await this.evaluateWithAI('successCriteria', content);
+            
+            // Validate the AI response structure
+            if (!evaluation || typeof evaluation !== 'object') {
+                throw new Error('Invalid AI response format: Response is empty or not an object');
+            }
+            
+            if (typeof evaluation.score !== 'number' || 
+                !evaluation.reason || 
+                !evaluation.evidence || 
+                evaluation.recommendation === undefined) {
+                throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
+            }
 
-        this.scores.successCriteria = score;
-        this.feedback.successCriteria = {
-            score,
-            message: this.getSuccessCriteriaFeedback(score)
-        };
+            // Update scores and feedback
+            this.scores.successCriteria = evaluation.score;
+            this.feedback.successCriteria = {
+                score: evaluation.score,
+                message: evaluation.reason,
+                details: {
+                    evidence: evaluation.evidence,
+                    recommendation: evaluation.recommendation,
+                    status: 'SUCCESS'
+                }
+            };
+
+            // Log successful evaluation for debugging
+            console.log('Success Criteria Evaluation:', {
+                content,
+                score: evaluation.score,
+                reason: evaluation.reason
+            });
+
+        } catch (error) {
+            console.error('Success Criteria Evaluation Error:', {
+                content,
+                error: error.message,
+                stack: error.stack
+            });
+
+            this.scores.successCriteria = 0;
+            this.feedback.successCriteria = {
+                score: 0,
+                message: 'Error evaluating success criteria',
+                details: {
+                    error: `Evaluation failed: ${error.message}. Please try again or contact support if the issue persists.`,
+                    status: 'ERROR',
+                    technicalDetails: error.stack
+                }
+            };
+        }
     }
 
-    evaluateDataRequirements() {
+    async evaluateDataRequirements() {
         const content = this.sections.dataRequirements;
         if (!content) {
             this.scores.dataRequirements = 0;
             this.feedback.dataRequirements = {
                 score: 0,
-                message: 'Missing data requirements'
+                message: 'Missing data requirements definition',
+                details: {
+                    error: 'No data requirements provided. Please add clear metrics to be measured and specify how data will be collected (tracking methods, events, timing).',
+                    status: 'MISSING_CONTENT'
+                }
             };
             return;
         }
 
-        // Basic scoring based on completeness
-        const hasMetrics = /metric|event|property|attribute|track/i.test(content);
-        const hasCollection = /collect|measure|record|capture|store/i.test(content);
-        
-        let score = 0;
-        if (hasMetrics && hasCollection) score = 2;
-        else if (hasMetrics || hasCollection) score = 1;
+        try {
+            const evaluation = await this.evaluateWithAI('dataRequirements', content);
+            
+            // Validate the AI response structure
+            if (!evaluation || typeof evaluation !== 'object') {
+                throw new Error('Invalid AI response format: Response is empty or not an object');
+            }
+            
+            if (typeof evaluation.score !== 'number' || 
+                !evaluation.reason || 
+                !evaluation.evidence || 
+                evaluation.recommendation === undefined) {
+                throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
+            }
 
-        this.scores.dataRequirements = score;
-        this.feedback.dataRequirements = {
-            score,
-            message: this.getDataRequirementsFeedback(score)
-        };
+            // Update scores and feedback
+            this.scores.dataRequirements = evaluation.score;
+            this.feedback.dataRequirements = {
+                score: evaluation.score,
+                message: evaluation.reason,
+                details: {
+                    evidence: evaluation.evidence,
+                    recommendation: evaluation.recommendation,
+                    status: 'SUCCESS'
+                }
+            };
+
+            // Log successful evaluation for debugging
+            console.log('Data Requirements Evaluation:', {
+                content,
+                score: evaluation.score,
+                reason: evaluation.reason
+            });
+
+        } catch (error) {
+            console.error('Data Requirements Evaluation Error:', {
+                content,
+                error: error.message,
+                stack: error.stack
+            });
+
+            this.scores.dataRequirements = 0;
+            this.feedback.dataRequirements = {
+                score: 0,
+                message: 'Error evaluating data requirements',
+                details: {
+                    error: `Evaluation failed: ${error.message}. Please try again or contact support if the issue persists.`,
+                    status: 'ERROR',
+                    technicalDetails: error.stack
+                }
+            };
+        }
     }
 
-    evaluateConsiderations() {
+    async evaluateConsiderations() {
         const content = this.sections.considerations;
         if (!content) {
             this.scores.considerations = 0;
             this.feedback.considerations = {
                 score: 0,
-                message: 'Missing considerations'
+                message: 'Missing considerations definition',
+                details: {
+                    error: 'No considerations provided. Please add at least one consideration, risk, question, or area to investigate.',
+                    status: 'MISSING_CONTENT'
+                }
             };
             return;
         }
 
-        // Basic scoring based on thoughtfulness
-        const hasRisks = /risk|concern|challenge|limitation|dependency/i.test(content);
-        const hasDetails = content.split(' ').length >= 20;
-        
-        let score = 0;
-        if (hasRisks && hasDetails) score = 2;
-        else if (hasRisks || hasDetails) score = 1;
+        try {
+            const evaluation = await this.evaluateWithAI('considerations', content);
+            
+            // Validate the AI response structure
+            if (!evaluation || typeof evaluation !== 'object') {
+                throw new Error('Invalid AI response format: Response is empty or not an object');
+            }
+            
+            if (typeof evaluation.score !== 'number' || 
+                !evaluation.reason || 
+                !evaluation.evidence || 
+                evaluation.recommendation === undefined) {
+                throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
+            }
 
-        this.scores.considerations = score;
-        this.feedback.considerations = {
-            score,
-            message: this.getConsiderationsFeedback(score)
-        };
+            // Update scores and feedback
+            this.scores.considerations = evaluation.score;
+            this.feedback.considerations = {
+                score: evaluation.score,
+                message: evaluation.reason,
+                details: {
+                    evidence: evaluation.evidence,
+                    recommendation: evaluation.recommendation,
+                    status: 'SUCCESS'
+                }
+            };
+
+            // Log successful evaluation for debugging
+            console.log('Considerations Evaluation:', {
+                content,
+                score: evaluation.score,
+                reason: evaluation.reason
+            });
+
+        } catch (error) {
+            console.error('Considerations Evaluation Error:', {
+                content,
+                error: error.message,
+                stack: error.stack
+            });
+
+            this.scores.considerations = 0;
+            this.feedback.considerations = {
+                score: 0,
+                message: 'Error evaluating considerations',
+                details: {
+                    error: `Evaluation failed: ${error.message}. Please try again or contact support if the issue persists.`,
+                    status: 'ERROR',
+                    technicalDetails: error.stack
+                }
+            };
+        }
     }
 
-    evaluateWhatNext() {
+    async evaluateWhatNext() {
         const content = this.sections.whatNext;
         if (!content) {
             this.scores.whatNext = 0;
             this.feedback.whatNext = {
                 score: 0,
-                message: 'Missing what next section'
+                message: 'Missing what next definition',
+                details: {
+                    error: 'No follow-up actions provided. Please add clear next steps for both success and failure scenarios.',
+                    status: 'MISSING_CONTENT'
+                }
             };
             return;
         }
 
-        // Basic scoring based on completeness
-        const hasSuccess = /success|pass|achieve|meet|exceed/i.test(content);
-        const hasFailure = /fail|not|below|miss|alternative/i.test(content);
-        
-        let score = 0;
-        if (hasSuccess && hasFailure) score = 2;
-        else if (hasSuccess || hasFailure) score = 1;
+        try {
+            const evaluation = await this.evaluateWithAI('whatNext', content);
+            
+            // Validate the AI response structure
+            if (!evaluation || typeof evaluation !== 'object') {
+                throw new Error('Invalid AI response format: Response is empty or not an object');
+            }
+            
+            if (typeof evaluation.score !== 'number' || 
+                !evaluation.reason || 
+                !evaluation.evidence || 
+                evaluation.recommendation === undefined) {
+                throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
+            }
 
-        this.scores.whatNext = score;
-        this.feedback.whatNext = {
-            score,
-            message: this.getWhatNextFeedback(score)
-        };
+            // Update scores and feedback
+            this.scores.whatNext = evaluation.score;
+            this.feedback.whatNext = {
+                score: evaluation.score,
+                message: evaluation.reason,
+                details: {
+                    evidence: evaluation.evidence,
+                    recommendation: evaluation.recommendation,
+                    status: 'SUCCESS'
+                }
+            };
+
+            // Log successful evaluation for debugging
+            console.log('What Next Evaluation:', {
+                content,
+                score: evaluation.score,
+                reason: evaluation.reason
+            });
+
+        } catch (error) {
+            console.error('What Next Evaluation Error:', {
+                content,
+                error: error.message,
+                stack: error.stack
+            });
+
+            this.scores.whatNext = 0;
+            this.feedback.whatNext = {
+                score: 0,
+                message: 'Error evaluating what next',
+                details: {
+                    error: `Evaluation failed: ${error.message}. Please try again or contact support if the issue persists.`,
+                    status: 'ERROR',
+                    technicalDetails: error.stack
+                }
+            };
+        }
     }
 
     async evaluateWithAI(section, content) {
@@ -675,60 +891,10 @@ class Evaluator {
 
 
 
-    getDurationFeedback(score) {
-        switch (score) {
-            case 2:
-                return 'Clear duration with supporting rationale';
-            case 1:
-                return 'Duration needs more justification';
-            default:
-                return 'Duration is unclear or missing rationale';
-        }
-    }
 
-    getSuccessCriteriaFeedback(score) {
-        switch (score) {
-            case 2:
-                return 'Clear success metrics and thresholds';
-            case 1:
-                return 'Success criteria needs more specific thresholds';
-            default:
-                return 'Success criteria lack clear metrics or thresholds';
-        }
-    }
 
-    getDataRequirementsFeedback(score) {
-        switch (score) {
-            case 2:
-                return 'Clear metrics and collection methods specified';
-            case 1:
-                return 'Data requirements need more detail';
-            default:
-                return 'Data requirements are unclear or incomplete';
-        }
-    }
 
-    getConsiderationsFeedback(score) {
-        switch (score) {
-            case 2:
-                return 'Thorough consideration of risks and dependencies';
-            case 1:
-                return 'Considerations need more detail';
-            default:
-                return 'Considerations are missing or lack depth';
-        }
-    }
 
-    getWhatNextFeedback(score) {
-        switch (score) {
-            case 2:
-                return 'Clear plans for both success and failure scenarios';
-            case 1:
-                return 'What next section needs more scenarios';
-            default:
-                return 'What next section is incomplete or missing scenarios';
-        }
-    }
 }
 
 // Initialize the evaluator

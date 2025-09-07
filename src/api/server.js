@@ -70,11 +70,28 @@ const EVALUATION_PROMPTS = {
         Return the evaluation in this exact JSON format.
     `,
     rootCause: `
-        Evaluate this root cause statement using these criteria:
-        1. Length (1 Point): One or two sentences
-        2. Format (1 Point): Uses "[trunk problem] because [reason]" format
-        3. Focus (4 Points): Describes user problems without referencing solutions
-        4. Clarity (4 Points): Logically and clearly explains WHY the problem exists
+        You are an assistant that evaluates the "Root Cause" section of an experiment brief.
+
+        Evaluate ONLY against this rubric:
+
+        • Length (1 Point): Must meet ONE of these criteria:
+           - Contains two sentences or fewer (counted by periods), OR
+           - Contains fewer than 50 words
+           → If either condition is true, award 1 point. Otherwise, 0.
+
+        • Format (1 Point): Must use a causal structure such as "[problem] because [reason]" or similar.
+           - Award 1 point if the text contains a causal connector ("because", "due to", "caused by", "as a result of") that links a problem to a reason.
+           - Otherwise, 0.
+
+        • Focus (4 Points): Describes user problems without referencing solutions or features.
+
+        • Clarity (4 Points): Logically and clearly explains WHY the problem exists.
+
+        Operational rules:
+        - Do not interpret literally bracketed placeholders. Look for causal logic, not exact text.
+        - For length, check sentence count and word count exactly as described above.
+        - Focus only on user challenges, not solutions or features.
+        - Clarity refers only to whether the reasoning is logical and understandable.
 
         Return the evaluation in this exact JSON format:
         {
@@ -82,7 +99,7 @@ const EVALUATION_PROMPTS = {
             "summary": "Brief overall assessment",
             "details": {
                 "length": "Score and explanation",
-                "format": "Score and explanation",
+                "format": "Score and explanation", 
                 "focus": "Score and explanation",
                 "clarity": "Score and explanation"
             }
@@ -248,6 +265,177 @@ const EVALUATION_PROMPTS = {
            }
 
         Return the evaluation in this exact JSON format.
+    `,
+    duration: `
+        You are an assistant that evaluates the "Duration" section of an experiment brief.
+
+        Evaluate ONLY against this rubric:
+
+        • 2 points: Must meet ALL of these criteria:
+           (A) Duration is clearly stated (specific timeframe, not vague)
+           (B) Includes a rationale for the chosen duration
+           (C) Rationale references relevant factors (e.g., expected user volume, statistical power, traffic assumptions, learning needs, or alignment with product usage patterns)
+        • 1 point: Has some clarity but either:
+           - Duration is stated but no rationale is provided, OR
+           - Rationale is present but doesn't reference specific factors (user volume, statistical power, traffic assumptions, learning needs, product usage patterns), OR
+           - Rationale is unclear or lacks sufficient justification for the chosen timeframe
+        • 0 points: Duration is missing, vague (e.g., "a few weeks"), or lacks any justification
+
+        Operational rules:
+        1) The duration MUST be specific (e.g., "4 weeks", "30 days") to receive full points. Vague terms like "a few weeks" should reduce the score.
+        2) Evidence must quote the duration statement being evaluated.
+        3) If the text is empty or missing, return score 0 with recommendation to add a clear duration with rationale.
+        4) Keep reasons concise and factual.
+        5) Recommendations should suggest how to:
+           - Make the duration more specific if it's vague
+           - Add rationale if missing (referencing user volume, statistical power, etc.)
+           - Strengthen weak rationale with specific factors
+        6) Output MUST be a strict JSON object with this shape:
+           {
+             "score": 0 | 1 | 2,
+             "reason": string,
+             "evidence": string,   // quote from the duration section
+             "recommendation": string
+           }
+
+        Return the evaluation in this exact JSON format.
+    `,
+    successCriteria: `
+        You are an assistant that evaluates the "Success Criteria" section of an experiment brief.
+
+        Evaluate ONLY against this rubric:
+
+        • 2 points: Must meet ALL of these criteria:
+           (A) Success is clearly defined using quantitative thresholds (e.g., ">20% lift for test over control")
+           (B) Includes statistical significance criteria (e.g., "Test is statistically significant") OR clear, logical statement and logic for measuring success
+           (C) Criteria align with the learning objective
+        • 1 point: Has some clarity but either:
+           - Success is stated but lacks specificity in thresholds, OR
+           - Some metrics have quantitative thresholds but not all, OR
+           - No clear logical way of determining and measuring success, OR
+           - Criteria don't clearly align with the learning objective
+        • 0 points: No clear success threshold, ambiguous criteria (e.g., "increase usage"), or missing success criteria entirely
+
+        Operational rules:
+        1) Success criteria must be specific and quantifiable (e.g., ">20% lift", "p<0.05", "conversion rate increases by 15%") to receive full points.
+        2) Evidence must quote the success criteria section being evaluated.
+        3) If the text is empty or missing, return score 0 with recommendation to add clear, quantitative success thresholds.
+        4) Keep reasons concise and factual.
+        5) Recommendations should:
+           - Suggest specific quantitative thresholds if missing
+           - Recommend statistical significance criteria if absent
+           - Ensure alignment with learning objective
+           - Replace vague terms with measurable benchmarks
+        6) Output MUST be a strict JSON object with this shape:
+           {
+             "score": 0 | 1 | 2,
+             "reason": string,
+             "evidence": string,   // quote from the success criteria section
+             "recommendation": string
+           }
+
+        Return the evaluation in this exact JSON format.
+    `,
+    dataRequirements: `
+        You are an assistant that evaluates the "Data Requirements" section of an experiment brief.
+
+        Evaluate ONLY against this rubric:
+
+        • 2 points: Must meet ALL of these criteria:
+           (A) Metrics to be measured are clearly listed
+           (B) Metrics align with the success criteria
+           (C) Clear explanation of how data will be collected (e.g., tracking method, event definition, or timing)
+        • 1 point: Has some clarity but either:
+           - Some metrics are listed but alignment to success criteria is unclear, OR
+           - Data collection method is vague or missing, OR
+           - Metrics are somewhat clear but lack specificity
+        • 0 points: Metrics are missing or unclear, and there is no explanation of how data will be collected
+
+        Operational rules:
+        1) Data requirements must specify what metrics will be tracked and how they will be collected to receive full points.
+        2) Evidence must quote the data requirements section being evaluated.
+        3) If the text is empty or missing, return score 0 with recommendation to add clear data collection requirements.
+        4) Keep reasons concise and factual.
+        5) Recommendations should:
+           - Suggest specific metrics if missing or unclear
+           - Recommend clear data collection methods (tracking, events, timing)
+           - Ensure alignment with success criteria
+           - Specify tracking implementation details if vague
+        6) Output MUST be a strict JSON object with this shape:
+           {
+             "score": 0 | 1 | 2,
+             "reason": string,
+             "evidence": string,   // quote from the data requirements section
+             "recommendation": string
+           }
+
+        Return the evaluation in this exact JSON format.
+    `,
+    considerations: `
+        You are an assistant that evaluates the "Considerations and investigation requirements" section of an experiment brief.
+
+        Evaluate ONLY against this rubric:
+
+        • 2 points: Must meet this criterion:
+           (A) Content is present that outlines at least one consideration, risk, question, or area to investigate (e.g., survey timing, user visibility, content engagement, technical dependencies, user behavior assumptions, potential biases, implementation challenges)
+        • 1 point: Has some content but either:
+           - Minimal content present but lacks clarity on what needs to be explored, OR
+           - Vague mention of considerations without specific details or actionable areas for investigation
+        • 0 points: No content provided or content is completely irrelevant to considerations, risks, or investigation areas
+
+        Operational rules:
+        1) Look for evidence of thoughtful planning around risks, unknowns, dependencies, or areas requiring further exploration.
+        2) Content should demonstrate the team has considered potential challenges, assumptions, or areas that need investigation.
+        3) Evidence must quote the considerations section being evaluated.
+        4) If the text is empty or missing, return score 0 with recommendation to add considerations.
+        5) Keep reasons concise and factual.
+        6) Recommendations should:
+           - Suggest specific types of considerations if missing (e.g., technical risks, user behavior assumptions, timing considerations, measurement challenges)
+           - Focus on areas that could impact experiment success or interpretation
+           - Encourage proactive thinking about potential issues
+        7) Output MUST be a strict JSON object with this shape:
+           {
+             "score": 0 | 1 | 2,
+             "reason": string,
+             "evidence": string,   // quote from the considerations section
+             "recommendation": string
+           }
+
+        Return the evaluation in this exact JSON format.
+    `,
+    whatNext: `
+        You are an assistant that evaluates the "What next" section of an experiment brief.
+
+        Evaluate ONLY against this rubric:
+
+        • 2 points: Must meet this criterion:
+           (A) Clearly identifies what will happen if the test succeeds AND what will happen if the test fails (e.g., roll out to broader audience, iterate on design, investigate reasons for failure, alternative approaches)
+        • 1 point: Has some content but either:
+           - Only one outcome (success OR failure) has a defined next step, OR
+           - Both outcomes are mentioned but lack clarity on specific actions or steps
+        • 0 points: No clear next steps are provided or content is completely missing
+
+        Operational rules:
+        1) Look for evidence of planning for both success and failure scenarios.
+        2) Success scenarios should outline concrete actions like rollout plans, scaling decisions, or implementation steps.
+        3) Failure scenarios should outline investigation plans, iteration strategies, or alternative approaches.
+        4) Evidence must quote the what next section being evaluated.
+        5) If the text is empty or missing, return score 0 with recommendation to add follow-up actions.
+        6) Keep reasons concise and factual.
+        7) Recommendations should:
+           - Specify which scenario (success/failure) needs more detail if only one is covered
+           - Suggest concrete follow-up actions for missing scenarios
+           - Focus on actionable next steps rather than vague statements
+           - Encourage planning for both positive and negative outcomes
+        8) Output MUST be a strict JSON object with this shape:
+           {
+             "score": 0 | 1 | 2,
+             "reason": string,
+             "evidence": string,   // quote from the what next section
+             "recommendation": string
+           }
+
+        Return the evaluation in this exact JSON format.
     `
 };
 
@@ -320,10 +508,10 @@ app.post('/evaluate-section', async (req, res) => {
         console.log('Using prompt for section:', section);
 
         // Function definitions for OpenAI
-        const functions = (section === 'learningObjective' || section === 'testVariant' || section === 'controlVariant' || section === 'audience') ? [
+        const functions = (section === 'learningObjective' || section === 'testVariant' || section === 'controlVariant' || section === 'audience' || section === 'duration' || section === 'successCriteria' || section === 'dataRequirements' || section === 'considerations' || section === 'whatNext') ? [
             {
                 name: "evaluate_section",
-                description: "Evaluates a learning objective, test variant, control variant, or audience",
+                description: "Evaluates a learning objective, test variant, control variant, audience, duration, success criteria, data requirements, considerations, or what next",
                 parameters: {
                     type: "object",
                     properties: {
