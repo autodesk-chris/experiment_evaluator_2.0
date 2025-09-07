@@ -227,7 +227,7 @@ class Evaluator {
             if (typeof evaluation.score !== 'number' || 
                 !evaluation.reason || 
                 !evaluation.evidence || 
-                !evaluation.recommendation) {
+                evaluation.recommendation === undefined) {
                 throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
             }
 
@@ -303,7 +303,7 @@ class Evaluator {
             if (typeof evaluation.score !== 'number' || 
                 !evaluation.reason || 
                 !evaluation.evidence || 
-                !evaluation.recommendation) {
+                evaluation.recommendation === undefined) {
                 throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
             }
 
@@ -372,7 +372,7 @@ class Evaluator {
             if (typeof evaluation.score !== 'number' || 
                 !evaluation.reason || 
                 !evaluation.evidence || 
-                !evaluation.recommendation) {
+                evaluation.recommendation === undefined) {
                 throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
             }
 
@@ -441,7 +441,7 @@ class Evaluator {
             if (typeof evaluation.score !== 'number' || 
                 !evaluation.reason || 
                 !evaluation.evidence || 
-                !evaluation.recommendation) {
+                evaluation.recommendation === undefined) {
                 throw new Error('Invalid AI response format: Missing required fields (score, reason, evidence, or recommendation)');
             }
 
