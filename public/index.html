@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Experiment Evaluator</title>
-    <link rel="stylesheet" href="../src/css/styles.css">
+    <!-- Webpack will inject the CSS -->
 </head>
 <body>
     <div class="container">
@@ -19,7 +19,7 @@
                 <div class="upload-container" id="drop-zone">
                     <input type="file" id="file-input" accept=".txt,.docx" hidden>
                     <div class="upload-content">
-                        <img src="assets/upload-icon.svg" alt="Upload" class="upload-icon">
+                        <div class="upload-icon">📁</div>
                         <p>Drag and drop your file here or <button class="upload-btn">choose a file</button></p>
                         <p class="file-types">Supported formats: .txt, .docx</p>
                     </div>
@@ -54,9 +54,6 @@
         </main>
     </div>
 
-    <script src="../src/js/documentHandler.js"></script>
-    <script src="../src/js/evaluator.js"></script>
-    <script src="../src/js/displayManager.js"></script>
-    <script src="../src/js/exportManager.js"></script>
+    <!-- Webpack will inject the bundled JavaScript -->
 </body>
 </html> 

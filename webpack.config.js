@@ -6,6 +6,7 @@ require('dotenv').config();
 module.exports = {
     entry: {
         app: [
+            './src/css/styles.css',
             './src/js/documentHandler.js',
             './src/js/evaluator.js',
             './src/js/displayManager.js',
