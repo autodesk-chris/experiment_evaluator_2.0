@@ -58,6 +58,7 @@ class DocumentHandler {
         }
 
         this.showProgress();
+        this.showLoadingOverlay();
         try {
             const content = await this.readFile(file);
             const sections = this.parseContent(content);
@@ -70,6 +71,7 @@ class DocumentHandler {
             window.evaluator.evaluate(sections);
         } catch (error) {
             this.showError('Error processing file: ' + error.message);
+            this.hideLoadingOverlay();
         } finally {
             this.hideProgress();
         }
@@ -206,6 +208,20 @@ class DocumentHandler {
     hideProgress() {
         this.progressBar.hidden = true;
         this.progressBar.querySelector('.progress-fill').style.width = '0';
+    }
+
+    showLoadingOverlay() {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+        }
+    }
+
+    hideLoadingOverlay() {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
     }
 
     showError(message) {

@@ -40,9 +40,9 @@ class Evaluator {
         window.displayManager.updateResults(this.scores, this.feedback, totalScore);
     }
 
-    // Binary sections (10 points if present)
+    // Binary sections (4 points if present)
     evaluateOutcome() {
-        const score = this.sections.outcome ? 10 : 0;
+        const score = this.sections.outcome ? 4 : 0;
         this.scores.outcome = score;
         this.feedback.outcome = {
             score,
@@ -51,7 +51,7 @@ class Evaluator {
     }
 
     evaluateTrunkProblem() {
-        const score = this.sections.trunkProblem ? 10 : 0;
+        const score = this.sections.trunkProblem ? 4 : 0;
         this.scores.trunkProblem = score;
         this.feedback.trunkProblem = {
             score,
@@ -60,7 +60,7 @@ class Evaluator {
     }
 
     evaluateBranchProblem() {
-        const score = this.sections.branchProblem ? 10 : 0;
+        const score = this.sections.branchProblem ? 4 : 0;
         this.scores.branchProblem = score;
         this.feedback.branchProblem = {
             score,
@@ -883,7 +883,7 @@ class Evaluator {
 
     calculateTotalScore() {
         const totalPoints = Object.values(this.scores).reduce((sum, score) => sum + score, 0);
-        const maxPoints = 88; // Total possible points (3×10 + 4×10 + 9×2)
+        const maxPoints = 70; // Total possible points (3×4 + 4×10 + 9×2)
         return Math.round((totalPoints / maxPoints) * 100);
     }
 
