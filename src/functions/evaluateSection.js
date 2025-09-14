@@ -8,10 +8,38 @@ const openai = new OpenAI({
 const EVALUATION_PROMPTS = {
     rootCause: `
         Evaluate this root cause statement using these criteria:
-        1. Length (1 Point): One or two sentences
-        2. Format (1 Point): Uses "[trunk problem] because [reason]" format
-        3. Focus (4 Points): Describes user problems without referencing solutions
-        4. Clarity (4 Points): Logically and clearly explains WHY the problem exists
+
+        1. Length (1 Point): One or two sentences.
+           - 1: Statement is concise (1–2 sentences).
+           - 0: Too short (fragment) or too long (3+ sentences).
+
+        2. Format (1 Point): Uses "[trunk problem] because [reason]" causal structure.
+           - 1: Clear cause-effect phrasing is present.
+           - 0: No clear causal link.
+
+        3. Focus (4 Points): Must be user-centric and avoid solution drift.
+           - 4: Users are the subject, struggle is clearly about their observable behavior, and no features/workflows/solutions are named.
+           - 3: Mostly user-focused, but minor product/system references present.
+           - 2: Mix of user struggle and product/system framing, partially in solution space.
+           - 1: Primarily product/system focused with little user perspective.
+           - 0: Purely product/system or solution-focused, no user struggle.
+
+        4. Clarity (4 Points): Must be observable, measurable, and leave room for multiple solutions.
+           - 4: Behavior is measurable in data/feedback and could be solved in 3+ ways.
+           - 3: Measurable and open-ended, but phrasing could be sharper.
+           - 2: Partly observable, with some assumptions about motivation/intent; multiple solutions possible but not obvious.
+           - 1: Vague or unmeasurable, or implies a narrow set of solutions.
+           - 0: Attitudinal, unmeasurable, and points to a single obvious fix.
+
+        Scoring Guidance:
+        - Max score = 10.
+        - Deduct points where statements lack user perspective, drift into solution space, or rely on unmeasurable motivations.
+        - Evidence belongs in supporting data, not in the problem statement itself.
+        - Apply this test:
+           - Does it name a specific feature or mechanism? If yes → solution space.
+           - Does it assume a fix or design limitation? If yes → solution space.
+           - Can it be solved in multiple ways? If yes → problem space.
+           - Can it be backed by data or feedback? If no → too vague.
 
         Provide evaluation in this format:
         {
