@@ -6,6 +6,33 @@ const openai = new OpenAI({
 
 // Function definitions for OpenAI API
 exports.EVALUATION_FUNCTIONS = {
+    // For 8-point sections (success criteria)
+    eightPointFunction: {
+        name: "evaluate_section",
+        description: "Evaluates success criteria in experiment briefs",
+        parameters: {
+            type: "object",
+            properties: {
+                score: {
+                    type: "number",
+                    description: "The overall score for this section (0-8)"
+                },
+                reason: {
+                    type: "string",
+                    description: "Brief explanation of the score"
+                },
+                evidence: {
+                    type: "string",
+                    description: "Quote or excerpt from the success criteria"
+                },
+                recommendation: {
+                    type: "string",
+                    description: "Specific improvement suggestion"
+                }
+            },
+            required: ["score", "reason", "evidence", "recommendation"]
+        }
+    },
     // For 2-point sections (learning objective, test variant, etc.)
     twoPointFunction: {
         name: "evaluate_section",
@@ -33,7 +60,7 @@ exports.EVALUATION_FUNCTIONS = {
             required: ["score", "reason", "evidence", "recommendation"]
         }
     },
-    // For 10-point sections (root cause, supporting data, etc.)
+    // For 10-point sections (prediction, supporting data)
     tenPointFunction: {
         name: "evaluate_section",
         description: "Evaluates a section of an experiment document",
@@ -43,6 +70,35 @@ exports.EVALUATION_FUNCTIONS = {
                 score: {
                     type: "number",
                     description: "The overall score for this section (0-10)"
+                },
+                summary: {
+                    type: "string",
+                    description: "A brief summary of the evaluation"
+                },
+                details: {
+                    type: "object",
+                    description: "Detailed evaluation of each criterion",
+                    properties: {
+                        format: { type: "string" },
+                        hypothesis: { type: "string" },
+                        testability: { type: "string" },
+                        flexibility: { type: "string" }
+                    }
+                }
+            },
+            required: ["score", "summary", "details"]
+        }
+    },
+    // For 20-point sections (root cause, hypothesis)
+    twentyPointFunction: {
+        name: "evaluate_section",
+        description: "Evaluates a section of an experiment document",
+        parameters: {
+            type: "object",
+            properties: {
+                score: {
+                    type: "number",
+                    description: "The overall score for this section (0-20)"
                 },
                 summary: {
                     type: "string",
@@ -66,8 +122,23 @@ exports.EVALUATION_FUNCTIONS = {
 
 // Helper function to determine which function definition to use
 exports.getFunctionForSection = (section) => {
-    const twoPointSections = ['learningObjective', 'testVariant', 'controlVariant', 'audience', 'duration', 'successCriteria', 'dataRequirements', 'considerations', 'whatNext'];
-    return twoPointSections.includes(section) ? [exports.EVALUATION_FUNCTIONS.twoPointFunction] : [exports.EVALUATION_FUNCTIONS.tenPointFunction];
+    const twoPointSections = ['learningObjective', 'testVariant', 'controlVariant', 'audience', 'duration', 'dataRequirements', 'considerations', 'whatNext'];
+    const twentyPointSections = ['rootCause', 'hypothesis'];
+    const tenPointSections = ['prediction', 'supportingData'];
+    const eightPointSections = ['successCriteria'];
+    
+    if (twoPointSections.includes(section)) {
+        return [exports.EVALUATION_FUNCTIONS.twoPointFunction];
+    } else if (twentyPointSections.includes(section)) {
+        return [exports.EVALUATION_FUNCTIONS.twentyPointFunction];
+    } else if (tenPointSections.includes(section)) {
+        return [exports.EVALUATION_FUNCTIONS.tenPointFunction];
+    } else if (eightPointSections.includes(section)) {
+        return [exports.EVALUATION_FUNCTIONS.eightPointFunction];
+    } else {
+        // Default to 10-point function for any unspecified sections
+        return [exports.EVALUATION_FUNCTIONS.tenPointFunction];
+    }
 };
 
 // Evaluation prompts for each section type
@@ -76,30 +147,30 @@ exports.EVALUATION_PROMPTS = {
         [VERSION: 2025-09-14 Updated Criteria]
         Evaluate this root cause statement using these criteria:
 
-        1. Length (1 Point): One or two sentences.
-           - 1: Statement is concise (1–2 sentences).
+        1. Length (2 Point): One or two sentences.
+           - 2: Statement is concise (1–2 sentences).
            - 0: Too long (3+ sentences).
 
-        2. Format (1 Point): Uses "[trunk problem] because [reason]" causal structure.
-           - 1: Clear cause-effect phrasing is present.
+        2. Format (2 Point): Uses "[trunk problem] because [reason]" causal structure.
+           - 2: Clear cause-effect phrasing is present.
            - 0: No clear causal link.
 
-        3. Focus (4 Points): Must be user-centric and avoid solution drift.
-           - 4: Users are the subject, is clearly about an observable behavior, and no features/workflows/solutions are named.
-           - 3: Mostly user-focused, but minor product/system references present.
-           - 2: Mix of user challenge and product/system framing, partially in solution space.
-           - 1: Primarily product/system focused with little user perspective.
+        3. Focus (8 Points): Must be user-centric and avoid solution drift.
+           - 8: Users are the subject, is clearly about an observable behavior, and no features/workflows/solutions are named.
+           - 6: Mostly user-focused, but minor product/system references present.
+           - 4: Mix of user challenge and product/system framing, partially in solution space.
+           - 2: Primarily product/system focused with little user perspective.
            - 0: Purely product/system or solution-focused, no user challenge.
 
-        4. Clarity (4 Points): Must be observable, measurable, and leave room for multiple solutions.
-           - 4: Behavior is measurable in data/feedback and could be solved in 3+ ways.
-           - 3: Measurable and open-ended, but phrasing could be sharper.
-           - 2: Partly observable, with some assumptions about motivation/intent; multiple solutions possible but not obvious.
-           - 1: Vague or unmeasurable, or implies a narrow set of solutions.
+        4. Clarity (8 Points): Must be observable, measurable, and leave room for multiple solutions.
+           - 8: Behavior is measurable in data/feedback and could be solved in 3+ ways.
+           - 6: Measurable and open-ended, but phrasing could be sharper.
+           - 4: Partly observable, with some assumptions about motivation/intent; multiple solutions possible but not obvious.
+           - 2: Vague or unmeasurable, or implies a narrow set of solutions.
            - 0: Attitudinal, unmeasurable, and points to a single obvious fix.
 
         Scoring Guidance:
-        - Max score = 10.
+        - Max score = 20.
         - Deduct points where statements lack user perspective, drift into solution space, or rely on unmeasurable motivations.
         - Evidence belongs in supporting data, not in the problem statement itself.
         - Apply this test:
@@ -145,40 +216,37 @@ exports.EVALUATION_PROMPTS = {
         [VERSION: 2025-09-14 Updated Criteria]
         Evaluate this hypothesis using these criteria:
 
-        1. Belief Statement (2 Points): Present-tense statement about the core user problem or behavior.
-           - 2: Clearly states the core belief about the problem or behavior, aligns with root cause, avoids solutions
-           - 1: States a belief but weakly connects to root cause, or mixes in implied actions/solutions
+        1. Belief Statement (4 Points): Present-tense statement about the core user problem or behavior.
+           - 4: Clearly states the core belief about the problem or behavior, aligns with root cause, avoids solutions
+           - 2: States a belief but weakly connects to root cause, or mixes in implied actions/solutions
            - 0: Describes an action, feature, or goal rather than a belief; no connection to root cause, uses 'if' in the statement
 
-        2. Reason (2 Points): Clear rationale explaining why this belief matters.
-           - 2: Provides rationale that logically follows from insights/evidence and connects to user behavior
-           - 1: Offers a reason but it is vague, generic, or loosely related to the problem
-           - 0: Provides no rationale or relies purely on speculation
+        2. Root cause alignment (2 Points): Clear rationale explaining why this belief matters.
+           - 2: Provides rationale that aligns to the root cause and connects to supporting data provided
+           - 1: Rationale is vague, generic, or loosely related to root cause
+           - 0: No rationale or relies purely on speculation
 
-        3. Falsifiability (3 Points): The belief must be testable and capable of being proven false.
-           - 3: Can be definitively validated or refuted with specific, measurable outcomes
-           - 2: Mostly testable, but contains ambiguous or subjective elements
-           - 1: Difficult to test or relies heavily on qualitative judgment
+        3. Falsifiability (6 Points): The belief must be testable and capable of being proven false.
+           - 6: Can be definitively validated or refuted with specific, measurable outcomes
+           - 4: Mostly testable, but contains ambiguous or subjective elements
+           - 2: Difficult to test or relies heavily on qualitative judgment
            - 0: Cannot be validated or falsified through measurement
 
-        4. Reflects Insights (3 Points): The belief should build from what is already known.
-           - 3: Directly addresses root cause and is consistent with available insights/evidence
-           - 2: Generally consistent with insights but overlooks key aspects
-           - 1: Weakly connected to insights, or potentially contradicts them
-           - 0: No connection to root cause or ignores available evidence
+        4. Reflects supporting data (8 Points): The belief should build from what is already known.
+           - 8: Directly addresses root cause and is consistent with supporting data
+           - 6: Generally consistent with supporting data but overlooks key aspects
+           - 4: Weakly connected to supporting data, or potentially contradicts them
+           - 0: No connection to root cause or ignores supporting data
 
         Scoring Guidance:
-        - Max score = 10
-        - Deduct points for:
-          • Future-tense or conditional language ('will', 'should', 'could')
-          • Solution- or feature-oriented framing
-          • Vague or unmeasurable statements
-          • Multiple beliefs embedded in one statement
+        - Max score = 20.
+        - Deduct points where future tense or conditional language ('if','should', 'could') is used, have solution or feature oriented framing, are vague or include multiple beliefs.
+        - A lack of evidence stated in the hypothesis should not lead to points deduction. Evidence belongs in supporting data.
         - Apply these tests:
-          • Can the belief be proven false?
-          • Is it written as a belief, not a solution/goal?
-          • Does it connect to the root cause?
-          • Is it logically supported by evidence?
+          1. Can the belief be proven false?
+          2. Is it written as a belief, not a solution/goal?
+          3. Does it connect to the root cause?
+          4. Is it logically supported by evidence, without needing to state specific data points.
 
         Provide evaluation in this format:
         {
@@ -194,11 +262,44 @@ exports.EVALUATION_PROMPTS = {
         }
     `,
     prediction: `
+        [VERSION: 2025-09-14 Updated Criteria]
         Evaluate this prediction using these criteria:
-        1. Format (2 points): Clear "If... then..." structure
-        2. Solution Alignment (3 points): States a solution. No requirement to provide details
-        3. Testability (3 points): Measurable outcome
-        4. Multiple Tests (2 points): Supports various implementations
+
+        1. Format (2 Points): Prediction must be written in a clear 'If... then...' structure.
+           - 2: Uses explicit 'If... then...' phrasing with clear condition and expected outcome
+           - 1: States a conditional relationship but phrasing is unclear or incomplete
+           - 0: No conditional structure; written as a statement of fact or vague expectation
+
+        2. Hypothesis Alignment (3 Points): Prediction should propose a solution that directly tests whether the hypothesis is true or false.
+           - 3: Clearly connects the solution to the hypothesis, making it possible to validate or invalidate the belief
+           - 2: References the hypothesis indirectly or weakly, but still provides some connection
+           - 1: States a solution without any clear relation to the hypothesis
+           - 0: No alignment with the hypothesis is evident
+
+        3. Testability (3 Points): Prediction must be measurable and capable of being proven false (specific metrics will be defined later).
+           - 3: Outcome is stated in a way that is observable and falsifiable, even without metrics defined yet
+           - 2: Outcome is generally testable but contains ambiguous or subjective elements
+           - 1: Outcome is difficult to observe or prove false in practice
+           - 0: Outcome cannot be validated or falsified in any way
+
+        4. Flexibility (2 Points): Prediction should allow testing across different implementations of the solution.
+           - 2: Framed at the outcome level, so multiple solution variations could test it
+           - 1: Tied to a single implementation of the solution
+           - 0: Locked to a feature specification, preventing broader testing
+
+        Scoring Guidance:
+        - Max score = 10
+        - Deduct points for:
+          • Predictions stated as certainties rather than conditional outcomes
+          • Vague or untestable statements
+          • Predictions not aligned with the hypothesis
+          • Overly prescriptive predictions tied to one solution
+
+        Apply these tests:
+          • Is it written as 'If... then...'?
+          • Does it align with the hypothesis by testing its truth?
+          • Can it be observed and proven false?
+          • Could different solution variations be used to test it?
 
         Provide evaluation in this format:
         {
@@ -206,7 +307,7 @@ exports.EVALUATION_PROMPTS = {
             "summary": "Brief overall assessment",
             "details": {
                 "format": "Score and explanation",
-                "solution": "Score and explanation",
+                "hypothesis": "Score and explanation",
                 "testability": "Score and explanation",
                 "flexibility": "Score and explanation"
             },
@@ -385,23 +486,53 @@ exports.EVALUATION_PROMPTS = {
     `,
     successCriteria: `
         [VERSION: 2025-09-14 Updated Criteria]
-        You are an assistant that evaluates the "Success Criteria" section of an experiment brief.
+
+        You are an AI assistant evaluating success criteria in experiment briefs. Your role is to assess whether the criteria are well-defined, measurable, and aligned with experiment objectives. You should provide specific, actionable feedback to help improve the quality of success criteria.
 
         Evaluate ONLY against this rubric:
 
-        • 2 points: Must meet ALL of these criteria:
-           (A) Success is clearly defined using quantitative thresholds (e.g., ">20% lift for test over control")
-           (B) Includes statistical significance criteria (e.g., "Test is statistically significant") OR clear, logical statement and logic for measuring success
-           (C) Criteria align with the learning objective
-        • 1 point: Has some clarity but either:
-           - Success is stated but lacks specificity in thresholds, OR
-           - Some metrics have quantitative thresholds but not all, OR
-           - No clear logical way of determining and measuring success, OR
-           - Criteria don't clearly align with the learning objective
-        • 0 points: No clear success threshold, ambiguous criteria (e.g., "increase usage"), or missing success criteria entirely
+        8 points:
+        - Clear behavioral change expressed with EITHER:
+          • Statistical significance (95% confidence) with any lift
+          • OR clear quantitative threshold >10% lift
+        - Direct alignment with learning objective
+        - Focused set of metrics (≤4)
+        - Each metric has clear measurement period
+        - Clear distinction between primary and secondary metrics
+
+        6 points:
+        - Clear behavioral change expressed with EITHER:
+          • Statistical significance (95% confidence) with any lift
+          • OR clear quantitative threshold >10% lift
+        - Somewhat aligned with learning objective
+        - May have too many metrics (5-6)
+        - Some metrics missing measurement periods
+        - Primary/secondary metrics not clearly distinguished
+
+        4 points:
+        - Mix of qualitative and quantitative measures
+        - No statistical significance OR threshold mentioned
+        - Loose connection to learning objective
+        - Too many metrics (>6)
+        - Some metrics missing measurement periods
+        - No clear distinction between primary/secondary metrics
+
+        2 points:
+        - Mostly qualitative measures
+        - No clear success thresholds
+        - Weak connection to learning objective
+        - Metrics are unclear or unmeasurable
+        - No measurement periods defined
+
+        0 points:
+        - No clear success criteria
+        - No measurable outcomes
+        - No connection to learning objective
+        - No specific metrics defined
+        - Success is completely ambiguous
 
         Operational rules:
-        1) Success criteria must be specific and quantifiable (e.g., ">20% lift", "p<0.05", "conversion rate increases by 15%") to receive full points.
+        1) Success criteria must be specific and quantifiable (e.g., ">20% lift or "p<0.05" or "conversion rate increases by 15%") to receive full points.
         2) Evidence must quote the success criteria section being evaluated.
         3) If the text is empty or missing, return score 0 with recommendation to add clear, quantitative success thresholds.
         4) Keep reasons concise and factual.
@@ -410,15 +541,14 @@ exports.EVALUATION_PROMPTS = {
            - Recommend statistical significance criteria if absent
            - Ensure alignment with learning objective
            - Replace vague terms with measurable benchmarks
-        6) Output MUST be a strict JSON object with this shape:
-           {
-             "score": 0 | 1 | 2,
-             "reason": string,
-             "evidence": string,   // quote from the success criteria section
-             "recommendation": string
-           }
 
-        Return the evaluation in this exact JSON format.
+        Return the evaluation in this exact JSON format:
+        {
+            "score": number,
+            "reason": "Brief explanation of the score",
+            "evidence": "Quote or excerpt from the success criteria",
+            "recommendation": "Specific improvement suggestion"
+        }
     `,
     dataRequirements: `
         [VERSION: 2025-09-14 Updated Criteria]

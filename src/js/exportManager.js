@@ -222,13 +222,21 @@ class ExportManager {
         if (['testTitle', 'shortDescription', 'testType'].includes(section)) {
             return 0;
         }
-        // Binary sections (4 points)
+        // Binary sections (2 points)
         if (['outcome', 'trunkProblem', 'branchProblem'].includes(section)) {
-            return 4;
+            return 2;
         }
-        // Complex AI sections (10 points)
-        if (['rootCause', 'supportingData', 'hypothesis', 'prediction'].includes(section)) {
+        // 20-point sections
+        if (['rootCause', 'hypothesis'].includes(section)) {
+            return 20;
+        }
+        // 10-point sections
+        if (['prediction', 'supportingData'].includes(section)) {
             return 10;
+        }
+        // 8-point sections
+        if (['successCriteria'].includes(section)) {
+            return 8;
         }
         // Simple AI sections (2 points)
         return 2;
@@ -236,12 +244,21 @@ class ExportManager {
 
     getScoreClass(score, maxScore) {
         const percentage = (score / maxScore) * 100;
-        if (maxScore === 2) {
-            if (percentage === 100) return 'score-high';
+        if (maxScore === 20) {
+            if (percentage >= 80) return 'score-high';
+            if (percentage >= 60) return 'score-medium';
+            return 'score-low';
+        } else if (maxScore === 10) {
+            if (percentage >= 80) return 'score-high';
+            if (percentage >= 60) return 'score-medium';
+            return 'score-low';
+        } else if (maxScore === 8) {
+            if (percentage >= 75) return 'score-high';
             if (percentage >= 50) return 'score-medium';
             return 'score-low';
-        } else if (maxScore === 4) {
+        } else if (maxScore === 2) {
             if (percentage === 100) return 'score-high';
+            if (percentage >= 50) return 'score-medium';
             return 'score-low';
         } else {
             if (percentage >= 80) return 'score-high';

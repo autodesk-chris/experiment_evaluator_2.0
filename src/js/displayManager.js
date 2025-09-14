@@ -64,28 +64,43 @@ class DisplayManager {
     }
 
     getMaxScore(section) {
-        // Binary sections (4 points)
+        // Binary sections (2 points)
         const binarySections = ['outcome', 'trunkProblem', 'branchProblem'];
-        // AI-evaluated sections (10 points)
-        const aiSections = ['rootCause', 'supportingData', 'hypothesis', 'prediction'];
+        // 20-point sections
+        const twentyPointSections = ['rootCause', 'hypothesis'];
+        // 10-point sections
+        const tenPointSections = ['prediction', 'supportingData'];
+        // 8-point sections
+        const eightPointSections = ['successCriteria'];
         
         if (binarySections.includes(section)) {
-            return 4;
+            return 2;
         }
-        if (aiSections.includes(section)) {
+        if (twentyPointSections.includes(section)) {
+            return 20;
+        }
+        if (tenPointSections.includes(section)) {
             return 10;
+        }
+        if (eightPointSections.includes(section)) {
+            return 8;
         }
         // All other sections are 2-point sections
         return 2;
     }
 
     getScoreColor(score, maxScore) {
-        if (maxScore === 10) {
+        if (maxScore === 20) {
+            if (score >= 16) return 'green';
+            if (score >= 12) return 'orange';
+            return 'red';
+        } else if (maxScore === 10) {
             if (score >= 8) return 'green';
             if (score >= 6) return 'orange';
             return 'red';
-        } else if (maxScore === 4) {
-            if (score === 4) return 'green';
+        } else if (maxScore === 8) {
+            if (score >= 6) return 'green';
+            if (score >= 4) return 'orange';
             return 'red';
         } else if (maxScore === 2) {
             if (score === 2) return 'green';
